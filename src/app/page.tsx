@@ -3,16 +3,28 @@
 import { useState } from 'react';
 import { callLLM } from '../app/utils/callLLM';
 
-export default function Home() {
-  const [llmProvider, setLlmProvider] = useState('openai');
-  const [promptText, setPromptText] = useState('');
-  const [messages, setMessages] = useState<any[]>([]); 
-  const [loading, setLoading] = useState(false); 
+// Define TypeScript interfaces for your data structures
+interface Message {
+  role: string; // Changed from strict literal types to string
+  content: string;
+}
 
-  const sendMessage = async () => {
+interface TemplateItem {
+  role?: string;
+  model?: string;
+  [key: string]: any; // Keep this for flexibility in template items
+}
+
+export default function Home() {
+  const [llmProvider, setLlmProvider] = useState<string>('openai');
+  const [promptText, setPromptText] = useState<string>('');
+  const [messages, setMessages] = useState<Message[]>([]); 
+  const [loading, setLoading] = useState<boolean>(false); 
+
+  const sendMessage = async (): Promise<void> => {
     if (promptText.trim()) {
       try {
-        const newMessages = [...messages, { role: 'user', content: promptText }];
+        const newMessages: Message[] = [...messages, { role: 'user', content: promptText }];
         setMessages(newMessages);
         setLoading(true); 
         const res = await fetch('/api/reviewapi', {
@@ -27,26 +39,26 @@ export default function Home() {
           }),
         });
 
-        const templateJson = await res.json();
-        const config = templateJson.find((item: any) => item.model);
-        const messageData = templateJson.filter((item: any) => item.role);
+        const templateJson: TemplateItem[] = await res.json();
+        const config = templateJson.find((item) => item.model);
+        const messageData = templateJson.filter((item) => item.role);
         const llmResponse = await callLLM(llmProvider, config, messageData);
 
-        setMessages([...newMessages, { role: 'assistant', content: llmResponse }]);
+        setMessages([...newMessages, { role: 'assistant', content: llmResponse }] as Message[]);
         setLoading(false); 
       } catch (err) {
         console.error('Error handling key press:', err);
         setLoading(false);
         setMessages([
           ...messages,
-          { role: 'assistant', content: 'An error occurred while calling the LLM.' },
-        ]);
+          { role: 'assistant', content: 'An error occurred while calling the LLM.' }
+        ] as Message[]);
       }
       setPromptText(''); 
     }
   };
 
-  const handleKeyPress = (e: any) => {
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>): void => {
     if (e.key === 'Enter') {
       sendMessage();
     }
