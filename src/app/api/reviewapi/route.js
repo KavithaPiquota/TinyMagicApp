@@ -2,6 +2,11 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import { replacePlaceholders } from '../../utils/templateReplacer';
+import { corsHeaders, withCors, handleOptions } from '../../utils/cors';
+
+export async function OPTIONS() {
+  return handleOptions();
+}
 
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
@@ -9,7 +14,8 @@ export async function GET(req) {
   const promptText = searchParams.get('promptText') || '';
   const llmProvider = searchParams.get('llmProvider') || 'default';
 
-  return await handleTemplate({ systemContent, promptText }, llmProvider);
+  const result = await handleTemplate({ systemContent, promptText }, llmProvider);
+  return withCors(result);
 }
 
 export async function POST(req) {
@@ -18,7 +24,8 @@ export async function POST(req) {
   const promptText = body.promptText || '';
   const llmProvider = body.llmProvider || 'default';
 
-  return await handleTemplate({ systemContent, promptText }, llmProvider);
+  const result = await handleTemplate({ systemContent, promptText }, llmProvider);
+  return withCors(result);
 }
 
 async function handleTemplate(replacements, llmProvider) {
@@ -34,9 +41,15 @@ async function handleTemplate(replacements, llmProvider) {
 
     const finalOutput = [...replacedPrompt, modelConfig];
 
-    return NextResponse.json(finalOutput);
+    return new NextResponse(JSON.stringify(finalOutput), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
   } catch (error) {
     console.error('Error processing template:', error);
-    return NextResponse.json({ error: 'Failed to process template' }, { status: 500 });
+    return new NextResponse(JSON.stringify({ error: 'Failed to process template' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 }
