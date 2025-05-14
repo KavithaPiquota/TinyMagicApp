@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import { replacePlaceholders } from '../../utils/templateReplacer';
-import { corsHeaders, withCors, handleOptions } from '../../utils/cors';
+import {  withCors, handleOptions } from '../../utils/cors';
 
 export async function OPTIONS() {
   return handleOptions();
