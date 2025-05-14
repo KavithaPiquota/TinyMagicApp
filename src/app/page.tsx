@@ -1,103 +1,121 @@
-import Image from "next/image";
+'use client';
+
+import { useState } from 'react';
+import { callLLM } from '../app/utils/callLLM';
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [llmProvider, setLlmProvider] = useState('openai');
+  const [promptText, setPromptText] = useState('');
+  const [messages, setMessages] = useState<any[]>([]); 
+  const [loading, setLoading] = useState(false); 
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const sendMessage = async () => {
+    if (promptText.trim()) {
+      try {
+        const newMessages = [...messages, { role: 'user', content: promptText }];
+        setMessages(newMessages);
+        setLoading(true); 
+        const res = await fetch('/api/reviewapi', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            systemContent: 'You are an expert assistant.',
+            promptText,
+            llmProvider,
+          }),
+        });
+
+        const templateJson = await res.json();
+        const config = templateJson.find((item: any) => item.model);
+        const messageData = templateJson.filter((item: any) => item.role);
+        const llmResponse = await callLLM(llmProvider, config, messageData);
+
+        setMessages([...newMessages, { role: 'assistant', content: llmResponse }]);
+        setLoading(false); 
+      } catch (err) {
+        console.error('Error handling key press:', err);
+        setLoading(false);
+        setMessages([
+          ...messages,
+          { role: 'assistant', content: 'An error occurred while calling the LLM.' },
+        ]);
+      }
+      setPromptText(''); 
+    }
+  };
+
+  const handleKeyPress = (e: any) => {
+    if (e.key === 'Enter') {
+      sendMessage();
+    }
+  };
+
+  return (
+    <main className="bg-gray-900 min-h-screen flex flex-col items-center justify-center p-6 text-white">
+      <h1 className="text-4xl font-semibold mb-8 text-center text-blue-400">LLM Prompt Playground</h1>
+
+      <div className="flex items-center justify-center mb-6">
+        <label htmlFor="llm-select" className="text-lg font-medium mr-2">Choose LLM:</label>
+        <select
+          id="llm-select"
+          value={llmProvider}
+          onChange={(e) => setLlmProvider(e.target.value)}
+          className="border border-blue-500 bg-gray-800 text-white px-4 py-2 rounded-md shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+        >
+          <option value="openai">OpenAI</option>
+          <option value="chatgpt">ChatGPT</option>
+          <option value="groq">Groq</option>
+          <option value="gemini">Gemini</option>
+        </select>
+      </div>
+
+      <div className="w-full bg-gray-800 rounded-xl p-4 shadow-xl space-y-4">
+        <div className="max-h-[400px] overflow-y-auto space-y-4 p-4">
+          {messages.map((message, index) => (
+            <div
+              key={index}
+              className={`flex ${message.role === 'user' ? 'justify-start' : 'justify-end'}`}
+            >
+              <div
+                className={`max-w-5xl p-4 rounded-lg shadow-md text-sm ${
+                  message.role === 'user'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-700 text-white'
+                }`}
+              >
+                {message.content}
+              </div>
+            </div>
+          ))}
+          {loading && (
+            <div className="flex justify-end">
+              <div className="max-w-xs p-4 rounded-lg bg-gray-700 text-white text-sm">
+                Typing...
+              </div>
+            </div>
+          )}
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+
+        <textarea
+          placeholder="Type your prompt here..."
+          value={promptText}
+          onChange={(e) => setPromptText(e.target.value)}
+          onKeyDown={handleKeyPress}
+          rows={2}
+          className="w-full text-gray-800 bg-white p-4 rounded-lg shadow-md placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
+        />
+
+        <div className="w-full flex justify-end">
+          <button
+            onClick={sendMessage} 
+            className="bg-blue-600 text-white px-6 py-2 rounded-md shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all"
+          >
+            Send
+          </button>
+        </div>
+      </div>
+    </main>
   );
 }
