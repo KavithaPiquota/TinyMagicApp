@@ -1,6 +1,6 @@
 [
   {
-    "role": "system",
+    "role": "system", 
     "content": "{{systemContent}}"
   },
   {

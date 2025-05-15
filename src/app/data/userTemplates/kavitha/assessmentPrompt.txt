@@ -1,0 +1,6 @@
+{
+  "CONCEPT_NAME": "Performance Undersupply (PUX)",
+  "STAGE_1_CONTENT": "Introduce Performance Undersupply as a hidden gap between delivery and expectation...",
+  "STAGE_2_CONTENT": "Break down the triggers and loop of PUX...",
+  "STAGE_3_CONTENT": "Compare PUX with other innovation frameworks..."
+}
