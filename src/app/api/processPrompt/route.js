@@ -4,7 +4,7 @@ import path from 'path';
 import { withCors, handleOptions } from '../../utils/cors';
 
 export async function OPTIONS() {
-    return handleOptions();  
+    return handleOptions();
 }
 
 export async function POST(req) {
@@ -20,13 +20,22 @@ export async function POST(req) {
         }
         const promptTemplate = JSON.parse(fs.readFileSync(promptTemplatePath, 'utf8'));
 
-        const userDataPath = path.join(baseDir, 'userTemplates', username, `${promptType}.txt`);
-        if (!fs.existsSync(userDataPath)) {
-            return NextResponse.json({
-                error: `Could not find the prompt template value for user '${username}' with prompt type '${promptType}'. Please ensure that the template data exists for the selected prompt type.`,
-            }, { status: 404 });
+        let userDataPath = path.join(baseDir, 'userTemplates', username, `${promptType}.txt`);
+        let userVariables;
+
+        if (fs.existsSync(userDataPath)) {
+            userVariables = JSON.parse(fs.readFileSync(userDataPath, 'utf8'));
+        } else {
+            console.warn(`User-specific template not found at ${userDataPath}. Falling back to defaultTemplateValues.txt.`);
+
+            const defaultTemplatePath = path.join(baseDir, 'defaultTemplateValues.txt');
+            if (!fs.existsSync(defaultTemplatePath)) {
+                return NextResponse.json({
+                    error: `Default template values not found at '${defaultTemplatePath}'.`
+                }, { status: 404 });
+            }
+            userVariables = JSON.parse(fs.readFileSync(defaultTemplatePath, 'utf8'));
         }
-        const userVariables = JSON.parse(fs.readFileSync(userDataPath, 'utf8'));
 
         let systemContentPath;
         if (promptType === 'conceptMentor') {
