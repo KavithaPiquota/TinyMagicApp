@@ -11,10 +11,11 @@ export async function POST(req) {
     try {
         const body = await req.json();
         const { username, promptType, llmProvider = 'default', userInput = '' } = body;
-
-        const baseDir = path.join(process.cwd(), 'app/data');
+        const baseDir = path.join(process.cwd(), 'src/app/data');
+console.log('Base Directory:', baseDir);  
 
         const promptTemplatePath = path.join(baseDir, 'promptTemplate.json');
+        console.log('Prompt Template Path:', promptTemplatePath); 
         if (!fs.existsSync(promptTemplatePath)) {
             return NextResponse.json({ error: `'promptTemplate.json' not found.` }, { status: 404 });
         }
