@@ -12,7 +12,7 @@ export async function POST(req) {
         const body = await req.json();
         const { username, promptType, llmProvider = 'default', userInput = '' } = body;
 
-        const baseDir = path.join(process.cwd(), 'src/app/data');
+        const baseDir = path.join(process.cwd(), 'app/data');
 
         const promptTemplatePath = path.join(baseDir, 'promptTemplate.json');
         if (!fs.existsSync(promptTemplatePath)) {
